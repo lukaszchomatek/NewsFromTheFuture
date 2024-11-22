@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forecast Navigation</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.3/css/bulma.min.css">
+</head>
+<body>
+    <section class="hero is-primary">
+        <div class="hero-body">
+            <div class="container">
+                <h1 class="title">
+                    Wiadomości z przyszłości - serwis futurologiczny AI
+                </h1>
+            </div>
+        </div>
+    </section>
+    <div id="app" class="container mt-5">
+        <div class="columns">
+            <!-- Sidebar with tabs -->
+            <div class="column is-one-third">
+                <div class="tabs is-boxed is-fullwidth">
+                    <ul>
+                        <li v-for="(forecast, index) in forecasts" :key="index" :class="{ 'is-active': activeTab === index }">
+                            <a @click="activeTab = index">Prognoza {{ index + 1 }}</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div v-if="activeForecast" class="box">
+                    <p>{{ activeForecast.forecast }}</p>
+                    <hr>
+                    <div v-for="(kpi, kpiIndex) in activeForecast.kpis" :key="kpiIndex">
+                        <a href="#" @click.prevent="showArticle(kpi, activeTab + 1, kpiIndex + 1)">{{ kpi }}</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content area for articles -->
+            <div class="column is-two-thirds">
+                <div v-if="articleContent" class="box">
+                    <h3 class="title is-2">{{ articleTitle }}</h3>
+                    <div v-html="formattedArticleContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        fetch('forecasts_kpis.json')
+            .then(response => response.json())
+            .then(data => {
+                Vue.createApp({
+                    data() {
+                        return {
+                            forecasts: data,
+                            activeTab: 0,
+                            articleTitle: '',
+                            articleContent: '',
+                        };
+                    },
+                    computed: {
+                        activeForecast() {
+                            return this.forecasts[this.activeTab];
+                        },
+                        formattedArticleContent() {
+                            return this.articleContent.replace(/\n/g, '<br>').replace(/<h1>/g, '<h1 class="title is-3">').replace(/<h2>/g, '<h2 class="title is-4">').replace(/<h3>/g, '<h3 class="title is-5">');
+                        }
+                    },
+                    methods: {
+                        showArticle(kpi, forecastIndex, kpiIndex) {
+                            this.articleTitle = "";
+                            const folderPath = `news/forecast_${forecastIndex}`;
+                            const articleFile = `${folderPath}/article_${kpiIndex}.html`;
+
+                            fetch(articleFile)
+                                .then(response => response.text())
+                                .then(html => {
+                                    this.articleContent = html;
+                                })
+                                .catch(error => {
+                                    this.articleContent = 'Nie udało się wczytać treści artykułu.';
+                                });
+                        }
+                    }
+                }).mount('#app');
+            });
+    </script>
+    <footer class="footer">
+        <div class="content has-text-centered">
+            <p>Treści zostały wygenerowane przy pomocy AI</p>
+        </div>
+    </footer>
+</body>
+</html>
